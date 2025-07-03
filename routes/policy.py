@@ -256,3 +256,16 @@ class PolicyApi:
 
         except Exception as e:
             return jsonify({"error": "Server error", "details": str(e)}), 500
+
+    @staticmethod
+    @policy_route.route('/create-policy', methods=['POST'])
+    def create_policy():
+        data = request.get_json()
+        name = data.get("policy_name")
+        if not name:
+            return jsonify({"success": False, "message": "Policy name required"}), 400
+        new_policy = DevicePolicy(policy_name=name)
+        db.session.add(new_policy)
+        db.session.commit()
+        return jsonify({"success": True, "policy_id": new_policy.id}), 201
+
