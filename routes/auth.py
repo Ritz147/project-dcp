@@ -4,6 +4,7 @@ from models import db, User
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, timedelta
 import jwt  # PyJWT
+import traceback
 
 login_route = Blueprint('login_route', __name__)
 
@@ -51,4 +52,6 @@ class LoginApi:
         except SQLAlchemyError as e:
             return jsonify({"error": "Database error", "details": str(e)}), 500
         except Exception as e:
-            return jsonify({"error": "Server error", "details":  str(e)}), 500
+            
+             current_app.logger.error("Server Error: %s", traceback.format_exc())
+             return jsonify({"error": "Server error", "details": str(e)}), 500
