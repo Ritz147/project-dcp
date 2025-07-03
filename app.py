@@ -15,6 +15,7 @@ def create_app():
 
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",f"sqlite:///{os.path.join(basedir, 'app.db')}")
     print(app.config['SQLALCHEMY_DATABASE_URI'])
+    app.config["SECRET_KEY"] = "super-secret-key"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["JWT_SECRET_KEY"] = "super-secret-key"
     app.config["JWT_ACCESS_TOKEN_EXPIRS"] = timedelta(days=1)
