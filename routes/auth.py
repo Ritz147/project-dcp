@@ -23,8 +23,8 @@ class LoginApi:
                 return jsonify({"error": "Username and password are required"}), 400
 
             user = User.query.filter_by(username=username).first()
-
-            if not user or not user.password_hash==password:
+            print(user)
+            if not user or user.password_hash!=password:
                 return jsonify({"error": "Invalid credentials"}), 401
 
             # Payload for manual JWT
