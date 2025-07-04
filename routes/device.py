@@ -65,7 +65,7 @@ class DeviceAPI:
                 enabled = policy_data.get("enabled", True)
                 action = policy_data.get("action", "")
                 package_name = policy_data.get("package_name", "")
-
+                policy_version=policy_data.get("policy_version")
                 if not name:
                     continue  # skip invalid entries
 
@@ -76,7 +76,8 @@ class DeviceAPI:
                         policy_name=name,
                         enabled=enabled,
                         action=action,
-                        package_name=package_name
+                        package_name=package_name,
+                        policy_version=policy_version
                     )
                     db.session.add(policy)
                     db.session.flush()  # ensures policy.id is available

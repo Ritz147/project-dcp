@@ -30,7 +30,6 @@ def create_app():
     app.register_blueprint(dashboard_route,url_prefix='')
     with app.app_context():
             print("Creating tables...")
-            db.drop_all()
             db.create_all()
             print("Tables created.")
     return app

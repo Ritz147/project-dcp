@@ -95,6 +95,7 @@ class DevicePolicyAssignment(db.Model):
     __tablename__ = "device_policy_assignments"
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     policy_id = db.Column(db.String, db.ForeignKey('device_policies.id'), nullable=False)
+    policy_version=db.Column(db.Integer,nullable=False)
     device_id = db.Column(db.String, db.ForeignKey('device_info.device_id'), nullable=False)
     assigned_at = db.Column(db.DateTime, default=lambda: to_ist(datetime.utcnow())) 
     device = db.relationship('DeviceInfo', backref=db.backref('policy_assignments', cascade='all, delete-orphan'))
