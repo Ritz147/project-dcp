@@ -71,6 +71,7 @@ class DeviceAPI:
 
                 policy = DevicePolicy.query.filter_by(policy_name=name).first()
                 if not policy:
+                    print(policy)
                     policy = DevicePolicy(
                         policy_name=name,
                         enabled=enabled,
