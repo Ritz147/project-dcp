@@ -260,25 +260,22 @@ class PolicyApi:
     @staticmethod
     @policy_route.route('/create-policy', methods=['POST'])
     def create_policy():
-        @staticmethod
-@policy_route.route('/create-policy', methods=['POST'])
-def create_policy():
-    data = request.get_json()
-    name = data.get("policy_name")
-    enabled = data.get("enabled", True)
-    device_ids = data.get("device_ids", [])
-
-    if not name:
-        return jsonify({"success": False, "message": "Policy name required"}), 400
-
-    new_policy = DevicePolicy(policy_name=name, enabled=enabled)
-    db.session.add(new_policy)
-    db.session.commit()
-
-    # Assign to selected devices if any
-    for device_id in device_ids:
-        assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
-        db.session.add(assignment)
+        data = request.get_json()
+        name = data.get("policy_name")
+        enabled = data.get("enabled", True)
+        device_ids = data.get("device_ids", [])
     
-    db.session.commit()
-    return jsonify({"success": True, "policy_id": new_policy.id}), 201
+        if not name:
+            return jsonify({"success": False, "message": "Policy name required"}), 400
+    
+        new_policy = DevicePolicy(policy_name=name, enabled=enabled)
+        db.session.add(new_policy)
+        db.session.commit()
+    
+        # Assign to selected devices if any
+        for device_id in device_ids:
+            assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
+            db.session.add(assignment)
+        
+        db.session.commit()
+        return jsonify({"success": True, "policy_id": new_policy.id}), 201
