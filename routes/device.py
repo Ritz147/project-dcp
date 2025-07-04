@@ -1,7 +1,7 @@
 from flask import Blueprint , request , jsonify
 from flask_jwt_extended import jwt_required
 from datetime import datetime
-from models import db, DeviceInfo, CallLog, DeviceLocation, DeviceStatus, DeviceStatusEnum , SMSLog , SMSTypeEnum
+from models import db, DeviceInfo, CallLog, DeviceLocation, DeviceStatus, DeviceStatusEnum , SMSLog , SMSTypeEnum , DevicePolicy
 device_routes=Blueprint('device_routes', __name__)
 from datetime import datetime, timedelta , timezone
 import pytz
@@ -101,22 +101,22 @@ class DeviceAPI:
             for app in apps_list:
                 name = app.get("name")
                 package_name = app.get("package_name")
-            
+
                 if not name or not package_name:
                     continue
-            
+
                 # Add to master app list
                 master = InstalledApp.query.filter_by(package_name=package_name).first()
                 if not master:
                     master = InstalledApp(name=name, package_name=package_name)
                     db.session.add(master)
                     db.session.flush()
-            
+
                 # Map to device
                 exists = InstalledAppPerDevice.query.filter_by(
                     device_id=device_id, package_name=package_name
                 ).first()
-            
+
                 if not exists:
                     db.session.add(
                         InstalledAppPerDevice(device_id=device_id, package_name=package_name)
