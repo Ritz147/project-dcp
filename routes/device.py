@@ -1,7 +1,7 @@
 from flask import Blueprint , request , jsonify
 from flask_jwt_extended import jwt_required
 from datetime import datetime
-from models import db, DeviceInfo, CallLog, DeviceLocation, DeviceStatus, DeviceStatusEnum , SMSLog , SMSTypeEnum , DevicePolicy
+from models import db, DeviceInfo, CallLog, DeviceLocation, DeviceStatus, DeviceStatusEnum , SMSLog , SMSTypeEnum , DevicePolicy , DevicePolicyAssignment , InstalledApp , InstalledAppPerDevice
 device_routes=Blueprint('device_routes', __name__)
 from datetime import datetime, timedelta , timezone
 import pytz
