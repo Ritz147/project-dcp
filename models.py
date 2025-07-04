@@ -85,6 +85,9 @@ class DevicePolicy(db.Model):
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     policy_name = db.Column(db.String(100), nullable=False)
     enabled = db.Column(db.Boolean, default=True)
+    action = db.Column(db.String(50), nullable=True)  # e.g., "block_app", "block_url"
+    package_name = db.Column(db.String(200), nullable=True)  # e.g., com.whatsapp
+    url = db.Column(db.String(500), nullable=True)  # if you want to support URL block in future
     created_at = db.Column(db.DateTime, default=lambda: to_ist(datetime.utcnow()))
     updated_at = db.Column(db.DateTime, default=lambda: to_ist(datetime.utcnow()), onupdate=lambda: to_ist(datetime.utcnow()))
     assigned_devices = db.relationship('DevicePolicyAssignment', backref='policy', cascade='all, delete-orphan')
@@ -127,4 +130,15 @@ class DashboardAccess(db.Model):
     user_id=db.Column(db.String , db.ForeignKey("users.id"),nullable=False)
     dashboard_part=db.Column(SQLAlchemyEnum(DashboardPartEnum),nullable=False)
 
-    
+class InstalledApp(db.Model):
+    __tablename__ = "installed_apps"
+    id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    package_name = db.Column(db.String(200), unique=True, nullable=False)
+
+class InstalledAppPerDevice(db.Model):
+    __tablename__ = "installed_apps_per_device"
+    id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    device_id = db.Column(db.String, db.ForeignKey('device_info.device_id'), nullable=False)
+    package_name = db.Column(db.String, db.ForeignKey('installed_apps.package_name'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: to_ist(datetime.utcnow()))

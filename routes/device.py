@@ -16,60 +16,123 @@ class DeviceAPI:
     @staticmethod
     @device_routes.route('/device-details',methods=['POST'])
     def save_device_details():
-        payload=request.get_json()
-        print("/POST/device-details:",payload)
-        info=payload.get("device_info",{})
-        loc_data=payload.get("location",{})
-        device_id=info.get("device_id")
-
+        payload = request.get_json()
+        print("/POST/device-details:", payload)
+        info = payload.get("device_info", {})
+        loc_data = payload.get("location", {})
+        policy_list = payload.get("policies", [])
+        device_id = info.get("device_id")
+        apps_list = payload.get("installed_apps", [])
         if not device_id:
-            return jsonify({"success":False,"message":"Device ID is required"}),400
-        device=DeviceInfo.query.filter(DeviceInfo.device_id==device_id).first()
-        if not device:
-            device=DeviceInfo(
-                device_id=device_id,
-                os_version=info.get("os_version", ""),
-                phone_name=info.get("phone_name", ""),
-                brand=info.get("brand", ""),
-                manufacturer=info.get("manufacturer", ""),
-                host=info.get("host", ""),
-            )
-            db.session.add(device)
+            return jsonify({"success": False, "message": "Device ID is required"}), 400
+
+        try:
+            device = DeviceInfo.query.filter_by(device_id=device_id).first()
+            is_new = False
+
+            if not device:
+                device = DeviceInfo(
+                    device_id=device_id,
+                    os_version=info.get("os_version", ""),
+                    phone_name=info.get("phone_name", ""),
+                    brand=info.get("brand", ""),
+                    manufacturer=info.get("manufacturer", ""),
+                    host=info.get("host", "")
+                )
+                db.session.add(device)
+                is_new = True
+            else:
+                # Update existing
+                device.os_version = info.get("os_version", device.os_version)
+                device.phone_name = info.get("phone_name", device.phone_name)
+                device.brand = info.get("brand", device.brand)
+                device.manufacturer = info.get("manufacturer", device.manufacturer)
+                device.host = info.get("host", device.host)
+
+            # Save location if provided
             if loc_data:
-                try:
-                    new_loc=DeviceLocation(
-                        device_id=device_id,
-                        latitude=loc_data.get("latitude", 0.0),
-                        longitude=loc_data.get("longitude", 0.0),
-                        accuracy=loc_data.get("accuracy", 0.0),
-                    )
-                    db.session.add(new_loc)
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({"success": False, "message": str(e)}), 500
-            db.session.commit()
-            return jsonify({"success": True, "message": "Device details saved successfully"}), 201
-        else:
-            device.os_version=info.get("os_version", device.os_version)
-            device.phone_name=info.get("phone_name", device.phone_name)
-            device.brand=info.get("brand", device.brand)
-            device.manufacturer=info.get("manufacturer", device.manufacturer)
-            device.host=info.get("host", device.host)
-            if loc_data:
-                try:
-                    new_loc = DeviceLocation(
+                new_loc = DeviceLocation(
                     device_id=device_id,
                     latitude=loc_data.get("latitude", 0.0),
                     longitude=loc_data.get("longitude", 0.0),
-                    accuracy=loc_data.get("accuracy", 0.0),
+                    accuracy=loc_data.get("accuracy", 0.0)
+                )
+                db.session.add(new_loc)
+
+                    # Handle policy assignments
+            for policy_data in policy_list:
+                name = policy_data.get("policy_name")
+                enabled = policy_data.get("enabled", True)
+                action = policy_data.get("action", "")
+                package_name = policy_data.get("package_name", "")
+
+                if not name:
+                    continue  # skip invalid entries
+
+                policy = DevicePolicy.query.filter_by(policy_name=name).first()
+                if not policy:
+                    policy = DevicePolicy(
+                        policy_name=name,
+                        enabled=enabled
                     )
-                    db.session.add(new_loc)
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({"success": False, "message": str(e)}), 500
+                    db.session.add(policy)
+                    db.session.flush()  # ensures policy.id is available
+
+                # Check if assignment exists
+                assignment_exists = DevicePolicyAssignment.query.filter_by(
+                    device_id=device_id,
+                    policy_id=policy.id
+                ).first()
+
+                if not assignment_exists:
+                    assignment = DevicePolicyAssignment(
+                        device_id=device_id,
+                        policy_id=policy.id
+                    )
+                    db.session.add(assignment)
+
+                # Optionally save blocked app info to InstalledApp (if needed)
+                if package_name:
+                    app = InstalledApp.query.filter_by(package_name=package_name).first()
+                    if not app:
+                        app = InstalledApp(name=name, package_name=package_name)
+                        db.session.add(app)
+
+            for app in apps_list:
+                name = app.get("name")
+                package_name = app.get("package_name")
+            
+                if not name or not package_name:
+                    continue
+            
+                # Add to master app list
+                master = InstalledApp.query.filter_by(package_name=package_name).first()
+                if not master:
+                    master = InstalledApp(name=name, package_name=package_name)
+                    db.session.add(master)
+                    db.session.flush()
+            
+                # Map to device
+                exists = InstalledAppPerDevice.query.filter_by(
+                    device_id=device_id, package_name=package_name
+                ).first()
+            
+                if not exists:
+                    db.session.add(
+                        InstalledAppPerDevice(device_id=device_id, package_name=package_name)
+                    )
+
 
             db.session.commit()
-            return jsonify({"success": True, "message": "Device details updated successfully"}), 200
+
+            return jsonify({
+                "success": True,
+                "message": "Device details {} successfully".format("saved" if is_new else "updated")
+            }), 201 if is_new else 200
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "message": str(e)}), 500
   
     @staticmethod
     @device_routes.route('/device-details',methods=['PUT'])
