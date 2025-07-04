@@ -73,7 +73,9 @@ class DeviceAPI:
                 if not policy:
                     policy = DevicePolicy(
                         policy_name=name,
-                        enabled=enabled
+                        enabled=enabled,
+                        action=action,
+                        package_name=package_name
                     )
                     db.session.add(policy)
                     db.session.flush()  # ensures policy.id is available
