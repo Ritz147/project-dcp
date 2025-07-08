@@ -19,7 +19,7 @@ class PolicyApi:
                     "created_at": policy.created_at.isoformat(),
                     "updated_at": policy.updated_at.isoformat(),
                     "assigned_devices":len(policy.assigned_devices),
-                    "policy_version"
+                    "policy_version":policy.policy_version
 
                 }
                 for policy in policies
