@@ -251,7 +251,9 @@ class PolicyApi:
                         "policy_name": p.policy_name,
                         "enabled": p.enabled,
                         "created_at": p.created_at.isoformat(),
-                        "updated_at": p.updated_at.isoformat()
+                        "updated_at": p.updated_at.isoformat(),
+                        "action":p.action,
+                        "package_name":p.package_name
                     })
 
             return jsonify({"success": True, "policies": policies}), 200
@@ -270,10 +272,10 @@ class PolicyApi:
             package_name = data.get("package_name", "")
             policy_version = data.get("policy_version", 1)
             device_ids = data.get("device_ids", [])
-    
+
             if not name:
                 return jsonify({"success": False, "message": "Policy name required"}), 400
-    
+
             # Create the policy
             new_policy = DevicePolicy(
                 policy_name=name,
@@ -284,11 +286,11 @@ class PolicyApi:
             )
             db.session.add(new_policy)
             db.session.commit()
-    
+
             # Device ID existence check
             existing_device_ids = {d.device_id for d in DeviceInfo.query.all()}
             skipped_devices = []
-    
+
             for device_id in device_ids:
                 if device_id in existing_device_ids:
                     print(f"[✔] Device exists: {device_id}")
@@ -297,15 +299,15 @@ class PolicyApi:
                 else:
                     print(f"[✘] Device NOT found in DB: {device_id}")
                     skipped_devices.append(device_id)
-    
+
             db.session.commit()
-    
+
             return jsonify({
                 "success": True,
                 "policy_id": new_policy.id,
                 "skipped_devices": skipped_devices
             }), 201
-    
+
         except KeyError as ke:
             return jsonify({"success": False, "message": f"Missing field: {str(ke)}"}), 400
         except Exception as e:
