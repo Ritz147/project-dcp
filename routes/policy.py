@@ -15,9 +15,11 @@ class PolicyApi:
                     "id": policy.id,
                     "policy_name": policy.policy_name,
                     "enabled": policy.enabled,
+                    "action":policy.action,
                     "created_at": policy.created_at.isoformat(),
                     "updated_at": policy.updated_at.isoformat(),
-                    "assigned_devices":len(policy.assigned_devices)
+                    "assigned_devices":len(policy.assigned_devices),
+                    "policy_version"
 
                 }
                 for policy in policies
@@ -261,21 +263,30 @@ class PolicyApi:
     @policy_route.route('/create-policy', methods=['POST'])
     def create_policy():
         data = request.get_json()
-        name = data.get("policy_name")
-        enabled = data.get("enabled", True)
-        device_ids = data.get("device_ids", [])
-    
-        if not name:
-            return jsonify({"success": False, "message": "Policy name required"}), 400
-    
-        new_policy = DevicePolicy(policy_name=name, enabled=enabled)
-        db.session.add(new_policy)
-        db.session.commit()
-    
-        # Assign to selected devices if any
-        for device_id in device_ids:
-            assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
-            db.session.add(assignment)
-        
-        db.session.commit()
-        return jsonify({"success": True, "policy_id": new_policy.id}), 201
+        try:
+            name = data.get("policy_name")
+            enabled = data.get("enabled", True)
+            action=data.get("action","")
+            package_name=data.get("package_name","")
+            policy_version=data["policy_version"]
+            device_ids = data.get("device_ids", [])
+
+            if not name:
+                return jsonify({"success": False, "message": "Policy name required"}), 400
+
+            new_policy = DevicePolicy(policy_name=name, enabled=enabled , action=action , package_name=package_name , policy_version=policy_version )
+            db.session.add(new_policy)
+            db.session.commit()
+
+            # Assign to selected devices if any
+            for device_id in device_ids:
+                assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
+                db.session.add(assignment)
+
+            db.session.commit()
+            return jsonify({"success": True, "policy_id": new_policy.id}), 201
+        except KeyError as ke:
+            return jsonify({"success":False , "message":f"Missing field :{str(ke)}"}),400
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success":False , "message":str(e)}),500
