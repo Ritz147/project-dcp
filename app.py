@@ -1,4 +1,7 @@
+
+from dotenv import load_dotenv
 import os
+
 from flask import Flask
 from models import db
 from routes.device import device_routes
@@ -9,16 +12,14 @@ from routes.dashboard import dashboard_route
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from flask_cors import CORS
+load_dotenv()
 def create_app():
     app=Flask(__name__)
-    basedir = os.path.abspath(os.path.dirname(__file__))
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",f"sqlite:///{os.path.join(basedir, 'app.db')}")
-    print(app.config['SQLALCHEMY_DATABASE_URI'])
-    app.config["SECRET_KEY"] = "super-secret-key"
+     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config["JWT_SECRET_KEY"] = "super-secret-key"
-    app.config["JWT_ACCESS_TOKEN_EXPIRS"] = timedelta(days=1)
+    app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=int(os.environ.get("JWT_ACCESS_TOKEN_EXPIRES_DAYS", 1)))
     #apply cors to allow frontend access
     CORS(app,supports_credentials=True)
     jwt = JWTManager(app)
