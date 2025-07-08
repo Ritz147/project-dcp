@@ -144,6 +144,7 @@ class DeviceAPI:
         payload=request.get_json()
         info=payload.get("device_info",{})
         loc_data=payload.get("location",{})
+        policy_list = payload.get("policies", [])
         device_id=info.get("device_id")
         if not device_id:
             return jsonify({"success":False,"message":"Device ID is required"}),400
@@ -168,7 +169,44 @@ class DeviceAPI:
                 except Exception as e:
                     db.session.rollback()
                     return jsonify({"success": False, "message": str(e)}), 500
+            for policy_data in policy_list:
+                name = policy_data.get("policy_name")
+                enabled = policy_data.get("enabled", True)
+                action = policy_data.get("action", "")
+                package_name = policy_data.get("package_name", "")
+                policy_version = policy_data.get("policy_version", 1)
+                if not name:
+                    continue
 
+                policy = DevicePolicy.query.filter_by(policy_name=name, policy_version=policy_version).first()
+                if not policy:
+                    policy = DevicePolicy(
+                        policy_name=name,
+                        enabled=enabled,
+                        action=action,
+                        package_name=package_name,
+                        policy_version=policy_version
+                    )
+                    db.session.add(policy)
+                    db.session.flush()
+
+                assignment_exists = DevicePolicyAssignment.query.filter_by(
+                    device_id=device_id,
+                    policy_id=policy.id
+                ).first()
+
+                if not assignment_exists:
+                    assignment = DevicePolicyAssignment(
+                        device_id=device_id,
+                        policy_id=policy.id
+                    )
+                    db.session.add(assignment)
+
+                if package_name:
+                    app = InstalledApp.query.filter_by(package_name=package_name).first()
+                    if not app:
+                        app = InstalledApp(name=name, package_name=package_name)
+                        db.session.add(app)
             db.session.commit()
             return jsonify({"success": True, "message": "Device details updated successfully"}), 200
         except Exception as e:
