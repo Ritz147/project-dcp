@@ -268,7 +268,7 @@ class PolicyApi:
             enabled = data.get("enabled", True)
             action=data.get("action","")
             package_name=data.get("package_name","")
-            policy_version=data["policy_version"]
+            policy_version=data.get("policy_version",1)
             device_ids = data.get("device_ids", [])
 
             if not name:
