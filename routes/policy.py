@@ -266,27 +266,48 @@ class PolicyApi:
         try:
             name = data.get("policy_name")
             enabled = data.get("enabled", True)
-            action=data.get("action","")
-            package_name=data.get("package_name","")
-            policy_version=data.get("policy_version",1)
+            action = data.get("action", "")
+            package_name = data.get("package_name", "")
+            policy_version = data.get("policy_version", 1)
             device_ids = data.get("device_ids", [])
-
+    
             if not name:
                 return jsonify({"success": False, "message": "Policy name required"}), 400
-
-            new_policy = DevicePolicy(policy_name=name, enabled=enabled , action=action , package_name=package_name , policy_version=policy_version )
+    
+            # Create the policy
+            new_policy = DevicePolicy(
+                policy_name=name,
+                enabled=enabled,
+                action=action,
+                package_name=package_name,
+                policy_version=policy_version
+            )
             db.session.add(new_policy)
             db.session.commit()
-
-            # Assign to selected devices if any
+    
+            # Device ID existence check
+            existing_device_ids = {d.device_id for d in DeviceInfo.query.all()}
+            skipped_devices = []
+    
             for device_id in device_ids:
-                assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
-                db.session.add(assignment)
-
+                if device_id in existing_device_ids:
+                    print(f"[✔] Device exists: {device_id}")
+                    assignment = DevicePolicyAssignment(device_id=device_id, policy_id=new_policy.id)
+                    db.session.add(assignment)
+                else:
+                    print(f"[✘] Device NOT found in DB: {device_id}")
+                    skipped_devices.append(device_id)
+    
             db.session.commit()
-            return jsonify({"success": True, "policy_id": new_policy.id}), 201
+    
+            return jsonify({
+                "success": True,
+                "policy_id": new_policy.id,
+                "skipped_devices": skipped_devices
+            }), 201
+    
         except KeyError as ke:
-            return jsonify({"success":False , "message":f"Missing field :{str(ke)}"}),400
+            return jsonify({"success": False, "message": f"Missing field: {str(ke)}"}), 400
         except Exception as e:
             db.session.rollback()
-            return jsonify({"success":False , "message":str(e)}),500
+            return jsonify({"success": False, "message": str(e)}), 500
